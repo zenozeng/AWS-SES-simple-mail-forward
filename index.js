@@ -1,54 +1,23 @@
-const AWS = require('aws-sdk');
-const ses = new AWS.SES();
-const MailComposer = require('nodemailer/lib/mail-composer')
-const simpleParser = require('mailparser').simpleParser;
+var AWS = require('aws-sdk');
+var ses = new AWS.SES();
 
 exports.handler = (event, context, callback) => {
-    const source = JSON.parse(event.Records[0].Sns.Message).content;
-    
-    simpleParser(source).then(mail => {
-        const headerMsg = [];
-        mail.headers.forEach((val, key) => {
-            headerMsg.push(`${key}: ${val}`)
-        })
-        ses.sendEmail({
-            Source: process.env.report_src_address,
-            Message: {
-                Subject: {
-                    Data: mail.subject,
-                },
-                Body: headerMsg.join('\n'),
-            },
-            Destination: process.env.fwd_address,
-        }, (err) => {
-            if (err) {
-                console.log(err, err.stack)
-            }
-        })
-        mail.headers.forEach((val, key, map) => {
-            if (key.toLowerCase().indexOf("dkim-") == 0) {
-                map.delete(key);
-            }
-        })
-        const mc = new MailComposer(mail)
-        mc.compile().build((err, msg) => {
-            if (err) {
-                console.error(err, err.stack)
-                return
-            }
-            ses.sendRawEmail({
-                RawMessage: {
-                    Data: msg.toString(),
-                },
-                Destinations: [process.env.fwd_address],
-            }, function (err, data) {
-                if (err) {
-                    console.error(err, err.stack);
-                }
-            });
-
-        })
-    }).catch(err => {
-        console.error(err, err.stack);
-    })
+    let source = JSON.parse(event.Records[0].Sns.Message).content;
+    source = source.replace(/^DKIM-Signature/im, "X-Original-DKIM-Signature");
+    source = source.replace(/^From/im, "X-Original-From");
+    source = source.replace(/^Source/im, "X-Original-Source");
+    source = source.replace(/^Sender/im, "X-Original-Sender");
+    source = source.replace(/^Return-Path/im, "X-Original-Return-Path");
+    source = source.replace(/^Domainkey-Signature/im, "X-Original-Domainkey-Signature");
+    source = `From: AWS SES Mail Forwarding <${process.env.fwd_src_address}>\n` + source;
+    ses.sendRawEmail({
+        RawMessage: {
+            Data: source,
+        },
+        Destinations: [process.env.fwd_address],
+    }, function (err, data) {
+        if (err) {
+            console.error(err, err.stack);
+        }
+    });
 }
