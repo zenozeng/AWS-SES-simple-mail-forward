@@ -17,11 +17,9 @@ exports.handler = (event, context, callback) => {
                 Subject: {
                     Data: mail.subject,
                 },
-                Body: {
-                    Data: headerMsg.join('\n'),
-                },
+                Body: headerMsg.join('\n'),
             },
-            Destinations: [process.env.fwd_address],
+            Destination: process.env.fwd_address,
         }, (err) => {
             if (err) {
                 console.log(err, err.stack)
@@ -45,7 +43,7 @@ exports.handler = (event, context, callback) => {
                 Destinations: [process.env.fwd_address],
             }, function (err, data) {
                 if (err) {
-                    console.error(err, err.stack); // an error occurred
+                    console.error(err, err.stack);
                 }
             });
 
