@@ -12,7 +12,7 @@ exports.handler = (event, context, callback) => {
             headerMsg.push(`${key}: ${val}`)
         })
         ses.sendEmail({
-            Source: "ses@zenozeng.com",
+            Source: process.env.report_src_address,
             Message: {
                 Subject: {
                     Data: mail.subject,
@@ -20,7 +20,8 @@ exports.handler = (event, context, callback) => {
                 Body: {
                     Data: headerMsg.join('\n'),
                 },
-            }
+            },
+            Destinations: [process.env.fwd_address],
         }, (err) => {
             if (err) {
                 console.log(err, err.stack)
