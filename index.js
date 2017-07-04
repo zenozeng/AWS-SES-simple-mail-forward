@@ -38,7 +38,7 @@ exports.handler = (event, context, callback) => {
             }
             ses.sendRawEmail({
                 RawMessage: {
-                    Data: msg,
+                    Data: msg.toString(),
                 },
                 Destinations: [process.env.fwd_address],
             }, function (err, data) {
